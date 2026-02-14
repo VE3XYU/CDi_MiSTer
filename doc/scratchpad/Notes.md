@@ -80,7 +80,6 @@ On frame 149, the first frame of the Philips logo animation is visible
 
 ## Debug output of CD-i Emulator
 
-
     CD-i Emulator version 0.5.3-beta8 for Windows (Limited edition)
     Found 31 recent files
     Found cdi200a.rom (Philips CD-i 200 F1 system ROM)
@@ -198,7 +197,6 @@ bcompare cdimono1/vmpega_split_swap.rom 0/romdump1.bin
 
 cat log | grep 'FMV INT\|XFER' > log2
 cat log | grep 'FMV INT\|XFER\|DVC Read e04062\|PIC2\|GOP' > log2
-
 
 
 1 Machine Config

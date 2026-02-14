@@ -103,6 +103,12 @@ Note*: 2 controllers are an unusual state for a CD-i machine. Keep that in mind.
 
 [This core is not yet feature complete](doc/todo.md)
 
+### Usage for CD-i homebrew development?
+
+By the time of writing, an optical drive emulator is not available for physical CD-i machines.
+It is therefore encouraged to test on CD-i emulators before burning to disc.
+[This core can be used to test your creations to some extent](doc/cdi_homebrew.md)
+
 ### Issues with external dependencies
 
 * A dump of the SLAVE 3.2 ROM is required to fix some hacks
