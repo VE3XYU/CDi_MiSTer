@@ -2169,11 +2169,7 @@ plm_frame_t *plm_video_decode(plm_video_t *self) {
 			// frame was a reference frame, we still have to return it.
 			if (
 				self->has_reference_frame &&
-				!self->assume_no_b_frames &&
-				plm_dma_buffer_has_ended(self->buffer) && (
-					self->picture_type == PLM_VIDEO_PICTURE_TYPE_INTRA ||
-					self->picture_type == PLM_VIDEO_PICTURE_TYPE_PREDICTIVE
-				)
+				plm_dma_buffer_has_ended(self->buffer) 
 			) {
 				self->has_reference_frame = FALSE;
 				frame = &self->frame_backward;
