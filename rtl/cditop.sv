@@ -686,6 +686,10 @@ module cditop (
         bit [15:0] V_PRPA; //0x194
         bit [31:0] V_Speed; // 0x100
         bit [15:0] V_PlayType; // 0x9a
+        bit [7:0] V_Sync;  // 0xc9 char*
+        bit [7:0] V_SyncDone;  // 0x12c char*
+        bit [15:0] V_LCntr;  // 0xac
+        bit [7:0] V_Frozen;  // 0xde char*
     } fdrvs1 = '{default: 0};
     bit [23:0] fdrvs1_static  /*verilator public_flat_rw*/ = 24'hdfb180;
     always @(posedge clk30) begin
@@ -736,6 +740,26 @@ module cditop (
             if (addr_byte == fdrvs1_static + 24'h017e && lds) begin  // Location is 0x17f -> low byte
                 fdrvs1.V_PicRt = cpu_data[7:0];
                 $display("V_PicRt = %d dez", cpu_data[7:0]);
+            end
+
+            if (addr_byte == fdrvs1_static + 24'h00c8 && lds) begin  // Location is 0xc9 -> low byte
+                fdrvs1.V_Sync = cpu_data[7:0];
+                $display("V_Sync = %d dez", cpu_data[7:0]);
+            end
+
+            if (addr_byte == fdrvs1_static + 24'h012c && uds) begin  // Location is 0x12c -> high byte
+                fdrvs1.V_SyncDone = cpu_data[7:0];
+                $display("V_SyncDone = %d dez", cpu_data[7:0]);
+            end
+
+            if (addr_byte == fdrvs1_static + 24'h0de && uds) begin  // Location is 0xde -> high byte
+                fdrvs1.V_Frozen = cpu_data[7:0];
+                $display("V_Frozen = %d dez", cpu_data[7:0]);
+            end
+
+            if (addr_byte == fdrvs1_static + 24'h00ac) begin
+                fdrvs1.V_LCntr = cpu_data;
+                $display("V_LCntr = %x", cpu_data);
             end
 
             if (addr_byte == fdrvs1_static + 24'h016a) begin

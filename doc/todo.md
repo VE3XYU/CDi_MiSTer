@@ -4,7 +4,10 @@
 * Regression of "The Apprentice"?
     * The audio on the title screen sometimes has crackles. (~5% chance of occurrence)
     * Start of regression unknown
-* Implement the speed setting of the 22ER9017 Touchpad
+* Moving window homebrew test timing is broken with 260123
+    * Was working in 260104. Also broken with 260116
+    * Proposed fix with 40637f4904
+    * Will be broken again with the addition of frame synced updates
 * Add support for MPEG Layer I
     * Affected disc is "AIMS - Learning About Ecology (1995)(AIMS Multimedia)(US)"
 * Frequency response of CDIC and MPEG audio output might not be 100% accurate
@@ -48,7 +51,16 @@
 * CD+G
 * Check compatibility with CDs that have track index 2 as opposed to the usual 0 and 1
     * Possible discs? "Philips CDI Format Test Disc 1 (Europe)" and a disc by Zeneca Pharmaceuticals Group, "An Interactive Medical Program"
-* Possibly adding support for other PCBs (like Mono II)
 * Possibly adding support for the Quizard arcade hardware
+
+## Low priority
+
+* Try to utilize 24 bit audio sample size with HDMI, because 16 bit are not enough for CD-i audio hardware
+    * The Mono I hardware has the option to mix 2x 16 bit together as single mono output.
+    * To allow this, the MiSTer needs to halve the volume of a single channel to fix clipping
+* Possibly adding support for other PCBs (like Mono II)
 * Refurbish I2C for the front display and show the content as picture in picture during changes?
     * It might not even be required at all.
+* Implement the speed setting of the 22ER9017 Touchpad
+    * 22ER9021 should be enough right now
+

@@ -105,6 +105,7 @@ module vmpeg (
     );
 
     wire fmv_event_picture_starts_display;
+    wire fmv_event_potential_picture_starts_display;
     wire fmv_event_last_picture_starts_display;
     wire fmv_event_first_intra_frame_seq_starts_display;
     wire fmv_event_first_intra_frame_gop_starts_display;
@@ -160,6 +161,7 @@ module vmpeg (
         .event_sequence_end(fmv_event_sequence_end),
         .event_buffer_underflow(fmv_event_buffer_underflow),
         .event_picture_starts_display(fmv_event_picture_starts_display),
+        .event_potential_picture_starts_display(fmv_event_potential_picture_starts_display),
         .event_last_picture_starts_display(fmv_event_last_picture_starts_display),
         .event_first_intra_frame_gop_starts_display(fmv_event_first_intra_frame_gop_starts_display),
         .event_first_intra_frame_seq_starts_display(fmv_event_first_intra_frame_seq_starts_display),
@@ -532,6 +534,7 @@ module vmpeg (
     bit restart_fmv_dsp_enable_q;
     bit pending_fma_stream_change;
     bit register_update_latch;
+    bit register_update_scroll;
 
     always @(posedge clk) begin
         bus_ack <= 0;
@@ -602,26 +605,27 @@ module vmpeg (
                 fmv_interrupt_status_register.pai <= 1;
             end
 
+            if (vsync && !vsync_q) fmv_interrupt_status_register.vsync <= 1;
 
-            if (vsync && !vsync_q) begin
-                fmv_interrupt_status_register.vsync <= 1;
+            // Either update when scroll==1 and vertical retrace occurs OR
+            // when scroll==0 and a new frame will be displayed
+            if ((!vsync && vsync_q && register_update_latch && register_update_scroll) || 
+                (register_update_latch && fmv_event_potential_picture_starts_display && !register_update_scroll)) begin
 
-                if (register_update_latch) begin
-                    fmv_interrupt_status_register.vcup <= 1;
-                    // Always present on VMPEG when VCUP occurs, never asked for in the driver
-                    // At 0x00e52ed2 there is a check for a solo occurence of VCUP
-                    // This never happens on real hardware since DCL is always there
-                    // resulting into a dead branch in the driver?
-                    fmv_interrupt_status_register.dcl <= 1;
-                    register_update_latch <= 0;
+                fmv_interrupt_status_register.vcup <= 1;
+                // Always present on VMPEG when VCUP occurs, never asked for in the driver
+                // At 0x00e52ed2 there is a check for a solo occurence of VCUP
+                // This never happens on real hardware since DCL is always there
+                // resulting into a dead branch in the driver?
+                fmv_interrupt_status_register.dcl <= 1;
+                register_update_latch <= 0;
 
-                    latched_display_offset_y <= video_ctrl_x_display[8:0];
-                    latched_display_offset_x <= video_ctrl_y_display[8:0];
-                    latched_window_offset_y <= video_ctrl_decoder_offset_y[8:0];
-                    latched_window_offset_x <= video_ctrl_decoder_offset_x[8:0];
-                    latched_window_width <= video_ctrl_window_width[8:0];
-                    latched_window_height <= video_ctrl_window_height[8:0];
-                end
+                latched_display_offset_y <= video_ctrl_x_display[8:0];
+                latched_display_offset_x <= video_ctrl_y_display[8:0];
+                latched_window_offset_y <= video_ctrl_decoder_offset_y[8:0];
+                latched_window_offset_x <= video_ctrl_decoder_offset_x[8:0];
+                latched_window_width <= video_ctrl_window_width[8:0];
+                latched_window_height <= video_ctrl_window_height[8:0];
             end
 
             if (fmv_event_first_intra_frame_seq_starts_display) begin
@@ -958,7 +962,8 @@ module vmpeg (
 
                             // 0008 RegsUpd
                             if (din[3]) begin
-                                register_update_latch <= 1;
+                                register_update_latch  <= 1;
+                                register_update_scroll <= din[2];
                                 $display("RegsUpd");
                             end
 

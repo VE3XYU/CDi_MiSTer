@@ -44,6 +44,7 @@ module mpeg_video (
     input demuxer_decoding_timestamp_updated,
     output bit [14:0] last_decoded_timestamp,
     output last_decoded_timestamp_updated,
+    output bit event_potential_picture_starts_display,
 
     output bit [10:0] decoder_width,
     output bit [ 8:0] decoder_height,
@@ -669,7 +670,6 @@ module mpeg_video (
         end
     end
 
-
     planar_yuv_s for_display;
     wire just_decoded_commit = dmem_cmd_payload_write_1 && dmem_cmd_valid_1 && dmem_cmd_ready_1 && dmem_cmd_payload_address_1==32'h10003040;
     wire for_display_valid_clk_mpeg;
@@ -688,9 +688,11 @@ module mpeg_video (
     bit [23:0] playback_frame_cnt;
 
     bit latch_frame_until_vblank = 0;
+    bit latch_frame_until_vsync = 0;
     bit first_intra_frame_of_gop_clk30;
     bit first_intra_frame_of_seq_clk30;
 
+    bit vsync_q;
     bit vblank_q1;
     bit vblank_q2;
     bit for_display_valid;
@@ -709,6 +711,7 @@ module mpeg_video (
     );
 
     always_ff @(posedge clk30) begin
+        vsync_q   <= vsync;
         vblank_q1 <= vblank;
         vblank_q2 <= vblank_q1;
 
@@ -730,9 +733,6 @@ module mpeg_video (
         end
 
         if (!dsp_enable) begin
-            decoder_width <= 0;
-            decoder_height <= 0;
-            frame_period <= 0;
             display_tempref <= 0;
             display_timecode <= 0;
             decoder_frameperiod_90khz <= 0;
@@ -741,13 +741,13 @@ module mpeg_video (
 
         for_display_valid <= for_display_valid_clk_mpeg;
 
-
         event_picture_starts_display <= 0;
         event_first_intra_frame_gop_starts_display <= 0;
         event_first_intra_frame_seq_starts_display <= 0;
         event_last_picture_starts_display <= 0;
 
         latch_frame_for_display <= 0;
+        event_potential_picture_starts_display <= 0;
 
         if (latch_frame_until_vblank && !vblank && vblank_q1 && vblank_q2) begin
             latch_frame_until_vblank <= 0;
@@ -757,16 +757,20 @@ module mpeg_video (
             event_last_picture_starts_display <= !for_display_valid;
         end
 
-        if (!playback_active) begin
-            playback_frame_cnt <= 0;
-        end else begin
-            playback_frame_cnt <= playback_frame_cnt + 1;
+        if (latch_frame_until_vsync && !vsync && vsync_q) begin
+            latch_frame_until_vsync <= 0;
+            event_potential_picture_starts_display <= 1;
 
-            if (playback_frame_cnt >= frame_period - 1) playback_frame_cnt <= 0;
-            if (playback_frame_cnt == 0 && for_display_valid) begin
+            if (for_display_valid && playback_active) begin
                 latch_frame_for_display  <= 1;
                 latch_frame_until_vblank <= 1;
             end
+        end
+
+        playback_frame_cnt <= playback_frame_cnt + 1;
+        if (playback_frame_cnt >= frame_period - 1) playback_frame_cnt <= 0;
+        if (playback_frame_cnt == 0 && frame_period > 120000) begin
+            latch_frame_until_vsync <= 1;
         end
 
         if (single_step) begin
@@ -801,7 +805,6 @@ module mpeg_video (
         .binary(pictures_in_fifo),
         .gray  (pictures_in_fifo_clk30_gray)
     );
-
 
     wire show_on_next_video_frame_clkddr;
     signal_cross_domain cross_vshow_on_next_video_frame (

@@ -231,14 +231,6 @@ module frameplayer (
     // 0011 like the N64 core to force a base of 0x30000000
     localparam bit [3:0] DDR_CORE_BASE = 4'b0011;
 
-    wire vertical_offset_wait_not_null_clkddr;
-    signal_cross_domain cross_vertical_offset_wait_not_null (
-        .clk_a(clkvideo),
-        .clk_b(clkddr),
-        .signal_in_clk_a(vertical_offset_wait != 0),
-        .signal_out_clk_b(vertical_offset_wait_not_null_clkddr)
-    );
-
     always_ff @(posedge clkddr) begin
         linecnt_clkddr <= linecnt;
 
@@ -255,7 +247,7 @@ module frameplayer (
         address_y_offset  <= latched_frame.width * window_y_clkddr;
         address_uv_offset <= 29'(latched_frame.width / 2) * 29'(window_y_clkddr / 2);
 
-        if (reset_clkddr || vblank_clkddr || vertical_offset_wait_not_null_clkddr) begin
+        if (reset_clkddr || vblank_clkddr) begin
             fetchstate <= IDLE;
             address_y <= latched_frame.y_adr + address_y_offset + 29'(window_x_clkddr);
             address_u <= latched_frame.u_adr + address_uv_offset + 29'(window_x_clkddr / 2);
